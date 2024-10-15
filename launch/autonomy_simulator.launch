@@ -2,5 +2,6 @@
   <node name="autonomy_simulator" pkg="autonomy_simulator" type="autonomy_simulator" output="log" respawn="true">
     <param name="generate_obstacles" value="false"/>
   </node>
-  <!-- You can add your nodes here to launch them! :) -->
+  <node name="path_finder" pkg="autonomy_simulator" type="autonomy_simulator" output="log" respawn="true">
+  </node>
 </launch>

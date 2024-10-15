@@ -44,6 +44,7 @@ add_executable(autonomy_simulator
   src/main.cpp
   src/autonomy_simulator.cpp
   src/map_generation.cpp
+  src/path_finder.cpp
 )
 
 add_dependencies(autonomy_simulator ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
