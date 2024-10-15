@@ -76,5 +76,6 @@
         "bit": "cpp",
         "codecvt": "cpp",
         "filesystem": "cpp"
-    }
+    },
+    "ros.distro": "noetic"
 }
