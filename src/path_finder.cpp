@@ -6,7 +6,7 @@
 #include "autonomy_simulator/RoverPose.h"
 #include "path_finder_utils.hpp"
 
-void PathFinder::setGoalCallback(autonomy_simulator::SetGoal::ConstPtr& goal) {
+void PathFinder::setGoalCallback(const autonomy_simulator::SetGoal::ConstPtr& goal) {
     if(_illegalState) {
         return;
     }
@@ -16,7 +16,7 @@ void PathFinder::setGoalCallback(autonomy_simulator::SetGoal::ConstPtr& goal) {
     _active = true;
 }
 
-void PathFinder::roverPoseCallback(autonomy_simulator::RoverPose::ConstPtr& pose) {
+void PathFinder::roverPoseCallback(const autonomy_simulator::RoverPose::ConstPtr& pose) {
     if(_illegalState) {
         return;
     }
@@ -61,5 +61,10 @@ PathFinder::PathFinder():
         false)),
     _roverPoseSubscriber(_nh.subscribe("/rover/pose", 1, &PathFinder::roverPoseCallback, this)),
     _setGoalSubscriber(_nh.subscribe("/set_goal", 1, &PathFinder::setGoalCallback, this)) {
-
+        
     }
+
+void PathFinder::start() {
+    _roverMovePublisherTimer.start();
+    ros::spin();
+}

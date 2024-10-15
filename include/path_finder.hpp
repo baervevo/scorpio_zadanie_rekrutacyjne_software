@@ -21,7 +21,7 @@ class PathFinder {
 
     // SetGoal Subscriber
     ros::Subscriber _setGoalSubscriber;
-    void setGoalCallback(autonomy_simulator::SetGoal::ConstPtr&);
+    void setGoalCallback(const autonomy_simulator::SetGoal::ConstPtr&);
 
     // RoverMove Publisher
     ros::Publisher _roverMovePublisher;
@@ -30,7 +30,7 @@ class PathFinder {
 
     // RoverPose Subscriber
     ros::Subscriber _roverPoseSubscriber;
-    void roverPoseCallback(autonomy_simulator::RoverPose::ConstPtr&);
+    void roverPoseCallback(const autonomy_simulator::RoverPose::ConstPtr&);
 
  public:
     PathFinder();
