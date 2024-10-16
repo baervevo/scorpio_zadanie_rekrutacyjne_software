@@ -27,6 +27,13 @@ void PathFinder::roverPoseCallback(const autonomy_simulator::RoverPose::ConstPtr
 }
 
 void PathFinder::roverMoveCallback(const ros::TimerEvent&) {
+    // The idea for pathfinding is a feedback loop between the goal and current position.
+    // If we completely trust the /rover/pose topic to publish the true current position of our rover
+    // it may be safer to continuously take into account the current position when planning the next move
+    // rather than creating a queue of moves which will be "blindly" executed.
+    // This could come in handy in real-world scenarios where an instruction doesn't necessarily yield the
+    // expected result.
+
     if(_illegalState) {
         return;
     }
