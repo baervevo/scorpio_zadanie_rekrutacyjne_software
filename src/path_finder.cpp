@@ -5,19 +5,42 @@
 #include "autonomy_simulator/SetGoal.h"
 #include "autonomy_simulator/RoverPose.h"
 #include "path_finder_utils.hpp"
+#include "autonomy_simulator/GetMap.h"
+#include "autonomy_simulator.hpp"
+#include <string>
+#include <fstream>
+#include <boost/graph/adjacency_list.hpp>
+
+using namespace boost;
 
 void PathFinder::setGoalCallback(const autonomy_simulator::SetGoal::ConstPtr& goal) {
     if(_illegalState) {
+        ROS_ERROR("Illegal state in setGoalCallback");
         return;
     }
 
+    // Resolve path based on goal coordinates and stored graph, ROS_ERROR if no valid path is found.
+
     _goalX = goal->x;
     _goalY = goal->y;
-    _active = true;
+
+    ROS_INFO("New goal set: (%d,%d)", _goalX, _goalY);
+
+    if(_goalX != _roverPoseX || _goalY != _roverPoseY) {
+        _activeRoute = createCoordinateStack(_graph, _roverPoseX, _roverPoseY, _goalX, _goalY, GRID_SIZE);
+
+        if(!_activeRoute.empty()) {
+            ROS_INFO("Path found.");
+            _roverMovePublisherTimer.start();
+        } else {
+            ROS_ERROR("No valid path was found!");
+        }
+    }
 }
 
 void PathFinder::roverPoseCallback(const autonomy_simulator::RoverPose::ConstPtr& pose) {
     if(_illegalState) {
+        ROS_ERROR("Illegal state in roverPoseCallback");
         return;
     }
 
@@ -27,25 +50,31 @@ void PathFinder::roverPoseCallback(const autonomy_simulator::RoverPose::ConstPtr
 }
 
 void PathFinder::roverMoveCallback(const ros::TimerEvent&) {
-    // The idea for pathfinding is a feedback loop between the goal and current position.
-    // If we completely trust the /rover/pose topic to publish the true current position of our rover
-    // it may be safer to continuously take into account the current position when planning the next move
-    // rather than creating a queue of moves which will be "blindly" executed.
-    // This could come in handy in real-world scenarios where an instruction doesn't necessarily yield the
-    // expected result.
-
     if(_illegalState) {
+        ROS_ERROR("Illegal state in roverMoveCallback");
         return;
     }
 
     if(_roverPoseX == _goalX && _roverPoseY == _goalY) {
-        _active = false;
-    }
+        _roverMovePublisherTimer.stop();
+    } else  {
+        std::pair<int, int> destCoordinates = mapDataIndexToCoordinates(_activeRoute.top(), GRID_SIZE);
+        int destX = destCoordinates.first;
+        int destY = destCoordinates.second;
 
-    if(_active) {
+        if(_roverPoseX == destX && _roverPoseY == destY) {
+            _activeRoute.pop();
+
+            destCoordinates = mapDataIndexToCoordinates(_activeRoute.top(), GRID_SIZE);
+            int destX = destCoordinates.first;
+            int destY = destCoordinates.second;
+        }
+
+        ROS_INFO("Next coordinates: (%d,%d)", destX, destY);
+
         std_msgs::UInt8 msg;
 
-        msg.data = determineMoveInstruction(_roverPoseX, _roverPoseY, _roverPoseR, _goalX, _goalY);
+        msg.data = determineMoveInstruction(_roverPoseX, _roverPoseY, _roverPoseR, destX, destY);
 
         _roverMovePublisher.publish(msg);
     }
@@ -59,6 +88,8 @@ PathFinder::PathFinder():
     _goalX(0),
     _goalY(0),
     _active(false),
+    _graph(Graph(GRID_SIZE*GRID_SIZE)),
+    _heightDeltaThreshold(0),
     _nh(ros::NodeHandle("path_finder")),
     _roverMovePublisher(_nh.advertise<std_msgs::UInt8>("/rover/move", 1)),
     _roverMovePublisherTimer(_nh.createTimer(
@@ -67,19 +98,44 @@ PathFinder::PathFinder():
         false,
         false)),
     _roverPoseSubscriber(_nh.subscribe("/rover/pose", 1, &PathFinder::roverPoseCallback, this)),
-    _setGoalSubscriber(_nh.subscribe("/set_goal", 1, &PathFinder::setGoalCallback, this)) {
+    _setGoalSubscriber(_nh.subscribe("/set_goal", 1, &PathFinder::setGoalCallback, this)),
+    _getMapServiceClient(_nh.serviceClient<autonomy_simulator::GetMap>("/get_map")) {
         
 }
 
 void PathFinder::start() {
-    _roverMovePublisherTimer.start();
+    int temp;
+    _nh.param(std::string("height_delta_threshold"), temp, 0);
+    _heightDeltaThreshold = temp;
+
+    autonomy_simulator::GetMap getMapService;
+
+    if(!_getMapServiceClient.waitForExistence(ros::Duration(5.0))) {
+        ROS_ERROR("/get_map service unavailable!");
+        _illegalState = true;
+    }
+
+    if(_getMapServiceClient.call(getMapService)) {
+        ROS_INFO("Map data retrieved.");
+
+        _map = getMapService.response.data;
+        
+        populateGraphBasedOnMap(_graph, _map, _heightDeltaThreshold, GRID_SIZE, GRID_SIZE);
+
+        ROS_INFO("Immediate neighbours: (1,0) - %d, (0,1) - %d",
+            _map[coordinatesToMapDataIndex(1, 0, GRID_SIZE)], _map[coordinatesToMapDataIndex(0, 1, GRID_SIZE)]);
+    } else {
+        ROS_ERROR("Unable to retrieve map data.");
+        _illegalState = true;
+    }
+
     ros::spin();
 }
 
 int main(int argc, char** argv) {
     ros::init(argc, argv, "path_finder");
 
-    //ROS_INFO("I'm alive!");
+    ROS_INFO("Path finder started.");
 
     PathFinder pathFinder;
     pathFinder.start();

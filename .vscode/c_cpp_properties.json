@@ -8,7 +8,8 @@
       "includePath": [
         "/opt/ros/noetic/include/*",
         "/home/mariuszr/Documents/catkin_ws/src/scorpio_zadanie_rekrutacyjne_software/include",
-        "/home/mariuszr/Documents/catkin_ws/devel/include"
+        "/home/mariuszr/Documents/catkin_ws/devel/include",
+        "/usr/include/boost/*"
       ],
       "name": "ROS",
       "cStandard": "gnu11",

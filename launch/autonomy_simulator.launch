@@ -1,7 +1,8 @@
 <launch>
   <node name="autonomy_simulator" pkg="autonomy_simulator" type="autonomy_simulator" output="screen" respawn="true">
-    <param name="generate_obstacles" value="false"/>
+    <param name="generate_obstacles" value="true"/>
   </node>
   <node name="path_finder" pkg="autonomy_simulator" type="path_finder" output="screen" respawn="true">
+    <param name="height_delta_threshold" value="10"/>
   </node>
 </launch>
