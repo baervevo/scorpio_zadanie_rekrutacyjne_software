@@ -6,7 +6,5 @@ int main(int argc, char** const argv) {
     ros::init(argc, argv, "autonomy_simulator");
     AutonomySimulator autonomySimulator;
     autonomySimulator.start();
-    PathFinder pathFinder;
-    pathFinder.start();
     return 0;
 }

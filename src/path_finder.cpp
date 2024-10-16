@@ -62,9 +62,19 @@ PathFinder::PathFinder():
     _roverPoseSubscriber(_nh.subscribe("/rover/pose", 1, &PathFinder::roverPoseCallback, this)),
     _setGoalSubscriber(_nh.subscribe("/set_goal", 1, &PathFinder::setGoalCallback, this)) {
         
-    }
+}
 
 void PathFinder::start() {
     _roverMovePublisherTimer.start();
     ros::spin();
+}
+
+int main(int argc, char** argv) {
+    ros::init(argc, argv, "path_finder");
+
+    //ROS_INFO("I'm alive!");
+
+    PathFinder pathFinder;
+    pathFinder.start();
+    return 0;
 }

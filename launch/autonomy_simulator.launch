@@ -1,7 +1,7 @@
 <launch>
-  <node name="autonomy_simulator" pkg="autonomy_simulator" type="autonomy_simulator" output="log" respawn="true">
+  <node name="autonomy_simulator" pkg="autonomy_simulator" type="autonomy_simulator" output="screen" respawn="true">
     <param name="generate_obstacles" value="false"/>
   </node>
-  <node name="path_finder" pkg="autonomy_simulator" type="autonomy_simulator" output="log" respawn="true">
+  <node name="path_finder" pkg="autonomy_simulator" type="path_finder" output="screen" respawn="true">
   </node>
 </launch>
