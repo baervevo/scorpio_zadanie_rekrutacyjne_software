@@ -62,7 +62,7 @@ void PathFinder::roverMoveCallback(const ros::TimerEvent&) {
     if(_roverPoseX == _goalX && _roverPoseY == _goalY) {
         _roverMovePublisherTimer.stop();
         ROS_INFO("Goal reached!");
-    } else  {
+    } else if(!_activeRoute.empty()) {
         // Not entirely elegant but stack top access is O(1) and I can't think of an implementation
         // that forgoes the if statement without implementing a different way of dealing with rotation
         // within a single square in order to proceed. Having immediate access to roverPose within this scope
@@ -83,6 +83,8 @@ void PathFinder::roverMoveCallback(const ros::TimerEvent&) {
         msg.data = determineMoveInstruction(_roverPoseX, _roverPoseY, _roverPoseR, destX, destY);
 
         _roverMovePublisher.publish(msg);
+    } else {
+        ROS_INFO("Route stack is empty!");
     }
 }
 

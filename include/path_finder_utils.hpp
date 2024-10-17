@@ -79,8 +79,8 @@ inline int coordinatesToMapDataIndex(int x, int y, int width) {
 inline void populateGraphBasedOnMap(Graph& graph, const std::vector<int8_t>& mapData,
         const int heightDeltaThreshold, const int8_t mapWidth, const int8_t mapHeight) {
 
-    for(int i = 0; i < GRID_SIZE; i++) {
-        for(int j = 0; j < GRID_SIZE; j++) {
+    for(int i = 0; i < mapHeight; i++) {
+        for(int j = 0; j < mapWidth; j++) {
             int currentIndex = coordinatesToMapDataIndex(i, j, mapWidth);
 
             std::vector<std::pair<uint8_t, uint8_t>> potentialNeighbours = {
@@ -91,7 +91,7 @@ inline void populateGraphBasedOnMap(Graph& graph, const std::vector<int8_t>& map
             };
 
             for(const auto& [ni, nj] : potentialNeighbours) {
-                if(ni >= 0 && ni < GRID_SIZE && nj >= 0 && nj < GRID_SIZE) {
+                if(ni >= 0 && ni < mapHeight && nj >= 0 && nj < mapWidth) {
                     int neighbourIndex = coordinatesToMapDataIndex(ni, nj, mapWidth);
                     int heightDelta = std::abs(mapData[currentIndex] - mapData[neighbourIndex]);
 
@@ -105,7 +105,7 @@ inline void populateGraphBasedOnMap(Graph& graph, const std::vector<int8_t>& map
 }
 
 template <typename Graph, typename Vertex>
-inline std::stack<int> createVertexStackFromBFS(Graph& graph, Vertex source, Vertex destination) {
+inline std::stack<int> createVertexStackFromBFS(const Graph& graph, const Vertex source, const Vertex destination) {
     std::stack<Vertex> route;
     std::vector<Vertex> predecessors(num_vertices(graph), -1);
     // To improve the "generality" of this function we would need to find a better value than -1
