@@ -11,6 +11,7 @@
 #include <stack>
 #include <boost/graph/breadth_first_search.hpp>
 #include <boost/graph/adjacency_list.hpp>
+#include "print_visitor.hpp"
 
 inline int8_t determineMoveInstruction(int8_t roverPoseX, int8_t roverPoseY, int8_t roverPoseR, int8_t goalX, int8_t goalY) {
     // This function assumes that moving forward is desired. If not, we can further reduce the number of rotations by simply going backwards when convenient.
@@ -68,7 +69,7 @@ inline std::string vectorToString(std::vector<T>& vec) {
 }
 
 inline std::pair<int8_t, int8_t> mapDataIndexToCoordinates(int i, int8_t width) {
-    return {std::floor(i / width), i % width};
+    return {i % width, std::floor(i / width)};
 }
 
 inline int coordinatesToMapDataIndex(int x, int y, int width) {
@@ -103,24 +104,30 @@ inline void populateGraphBasedOnMap(Graph& graph, const std::vector<int8_t>& map
     }
 }
 
-inline std::stack<int> createCoordinateStack(Graph& graph, uint8_t sourceX, uint8_t sourceY,
-        uint8_t destX, uint8_t destY, uint8_t gridWidth) {
-    
-    std::stack<int> route;
-    std::vector<int> predecessors(num_vertices(graph), -1);
+template <typename Graph, typename Vertex>
+inline std::stack<int> createVertexStackFromBFS(Graph& graph, Vertex source, Vertex destination) {
+    std::stack<Vertex> route;
+    std::vector<Vertex> predecessors(num_vertices(graph), -1);
+    // To improve the "generality" of this function we would need to find a better value than -1
+    // to initialize the predecessor vector to, we get away with this here because our graph vertex descriptor
+    // is int, anything that doesn't have a cast to int will cause errors.
 
-    int sourceIndex = coordinatesToMapDataIndex(sourceX, sourceY, gridWidth);
-    int destIndex = coordinatesToMapDataIndex(destX, destY, gridWidth);
+    breadth_first_search(graph, vertex(source, graph),
+        visitor(
+            make_bfs_visitor(
+                record_predecessors(
+                    &predecessors[0],
+                    on_tree_edge()
+                )
+            )
+        )
+    );
 
-    breadth_first_search(graph, vertex(sourceIndex, graph), predecessor_map(make_iterator_property_map(
-        predecessors.begin(), get(vertex_index, graph)
-    )));
-
-    if(predecessors[destIndex] == -1) {
+    if(predecessors[destination] == -1) {
         return std::stack<int>(); // Empty stack means no valid path was found or the source is the same as the destination.
     }
 
-    for(int vertex = destIndex; vertex != -1; vertex = predecessors[vertex]){
+    for(int vertex = destination; vertex != -1; vertex = predecessors[vertex]){
         route.push(vertex);
     }
 

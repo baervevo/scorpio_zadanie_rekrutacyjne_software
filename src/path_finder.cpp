@@ -27,7 +27,11 @@ void PathFinder::setGoalCallback(const autonomy_simulator::SetGoal::ConstPtr& go
     ROS_INFO("New goal set: (%d,%d)", _goalX, _goalY);
 
     if(_goalX != _roverPoseX || _goalY != _roverPoseY) {
-        _activeRoute = createCoordinateStack(_graph, _roverPoseX, _roverPoseY, _goalX, _goalY, GRID_SIZE);
+        _activeRoute = createVertexStackFromBFS(
+            _graph,
+            coordinatesToMapDataIndex(_roverPoseX, _roverPoseY, GRID_SIZE),
+            coordinatesToMapDataIndex(_goalX, _goalY, GRID_SIZE)
+        );
 
         if(!_activeRoute.empty()) {
             ROS_INFO("Path found.");
@@ -57,7 +61,12 @@ void PathFinder::roverMoveCallback(const ros::TimerEvent&) {
 
     if(_roverPoseX == _goalX && _roverPoseY == _goalY) {
         _roverMovePublisherTimer.stop();
+        ROS_INFO("Goal reached!");
     } else  {
+        // Not entirely elegant but stack top access is O(1) and I can't think of an implementation
+        // that forgoes the if statement without implementing a different way of dealing with rotation
+        // within a single square in order to proceed. Having immediate access to roverPose within this scope
+        // would help a bunch.
         std::pair<int, int> destCoordinates = mapDataIndexToCoordinates(_activeRoute.top(), GRID_SIZE);
         int destX = destCoordinates.first;
         int destY = destCoordinates.second;
@@ -70,10 +79,7 @@ void PathFinder::roverMoveCallback(const ros::TimerEvent&) {
             int destY = destCoordinates.second;
         }
 
-        ROS_INFO("Next coordinates: (%d,%d)", destX, destY);
-
         std_msgs::UInt8 msg;
-
         msg.data = determineMoveInstruction(_roverPoseX, _roverPoseY, _roverPoseR, destX, destY);
 
         _roverMovePublisher.publish(msg);
@@ -122,8 +128,11 @@ void PathFinder::start() {
         
         populateGraphBasedOnMap(_graph, _map, _heightDeltaThreshold, GRID_SIZE, GRID_SIZE);
 
+        // We can immediately tell if our rover is just locked to (0,0) from the top and right.
         ROS_INFO("Immediate neighbours: (1,0) - %d, (0,1) - %d",
-            _map[coordinatesToMapDataIndex(1, 0, GRID_SIZE)], _map[coordinatesToMapDataIndex(0, 1, GRID_SIZE)]);
+            _map[coordinatesToMapDataIndex(1, 0, GRID_SIZE)],
+            _map[coordinatesToMapDataIndex(0, 1, GRID_SIZE)]
+        );
     } else {
         ROS_ERROR("Unable to retrieve map data.");
         _illegalState = true;
