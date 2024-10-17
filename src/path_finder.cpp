@@ -83,7 +83,10 @@ void PathFinder::roverMoveCallback(const ros::TimerEvent&) {
 
         _roverMovePublisher.publish(msg);
     } else {
-        ROS_INFO("Route stack is empty!");
+        // Shouldn't ever enter here.
+
+        ROS_ERROR("Route stack is empty!");
+        _roverMovePublisherTimer.stop();
     }
 }
 
