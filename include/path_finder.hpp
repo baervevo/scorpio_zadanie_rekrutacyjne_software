@@ -2,11 +2,12 @@
 
 #include <ros/ros.h>
 #include <std_msgs/UInt8.h>
-#include "autonomy_simulator/SetGoal.h"
-#include "autonomy_simulator/RoverPose.h"
 #include <vector>
 #include <stack>
 #include <boost/graph/adjacency_list.hpp>
+
+#include "autonomy_simulator/SetGoal.h"
+#include "autonomy_simulator/RoverPose.h"
 
 using namespace boost;
 

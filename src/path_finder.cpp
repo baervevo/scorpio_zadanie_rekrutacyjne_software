@@ -2,14 +2,13 @@
 
 #include <ros/ros.h>
 #include <std_msgs/UInt8.h>
+#include <string>
+
 #include "autonomy_simulator/SetGoal.h"
 #include "autonomy_simulator/RoverPose.h"
-#include "path_finder_utils.hpp"
 #include "autonomy_simulator/GetMap.h"
 #include "autonomy_simulator.hpp"
-#include <string>
-#include <fstream>
-#include <boost/graph/adjacency_list.hpp>
+#include "path_finder_utils.hpp"
 
 using namespace boost;
 

@@ -1,17 +1,14 @@
 #pragma once
 
-#include <utility>
 #include <array>
 #include <string>
 #include <stack>
 #include <std_msgs/UInt8.h>
-#include "autonomy_simulator/RoverPose.h"
-#include "path_finder.hpp"
-#include "autonomy_simulator.hpp"
-#include <stack>
 #include <boost/graph/breadth_first_search.hpp>
 #include <boost/graph/adjacency_list.hpp>
-#include "print_visitor.hpp"
+
+#include "autonomy_simulator/RoverPose.h"
+#include "path_finder.hpp"
 
 inline int8_t determineMoveInstruction(int8_t roverPoseX, int8_t roverPoseY, int8_t roverPoseR, int8_t goalX, int8_t goalY) {
     // This function assumes that moving forward is desired. If not, we can further reduce the number of rotations by simply going backwards when convenient.
