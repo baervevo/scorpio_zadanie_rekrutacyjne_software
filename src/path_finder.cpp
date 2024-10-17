@@ -94,7 +94,6 @@ PathFinder::PathFinder():
     _roverPoseR(autonomy_simulator::RoverPose::ORIENTATION_NORTH),
     _goalX(0),
     _goalY(0),
-    _active(false),
     _graph(Graph(GRID_SIZE*GRID_SIZE)),
     _heightDeltaThreshold(0),
     _nh(ros::NodeHandle("path_finder")),

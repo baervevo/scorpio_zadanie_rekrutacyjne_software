@@ -25,7 +25,6 @@ class PathFinder {
 
     uint8_t _goalX;
     uint8_t _goalY;
-    bool _active;
 
     std::vector<int8_t> _map;
     Graph _graph;
