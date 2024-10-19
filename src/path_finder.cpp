@@ -4,11 +4,13 @@
 #include <std_msgs/UInt8.h>
 #include <string>
 
+#include "autonomy_simulator.hpp"
+#include "path_finder_utils.hpp"
+
+#include "autonomy_simulator/RoverMap.h"
 #include "autonomy_simulator/SetGoal.h"
 #include "autonomy_simulator/RoverPose.h"
 #include "autonomy_simulator/GetMap.h"
-#include "autonomy_simulator.hpp"
-#include "path_finder_utils.hpp"
 
 using namespace boost;
 
@@ -53,6 +55,8 @@ void PathFinder::roverPoseCallback(const autonomy_simulator::RoverPose::ConstPtr
 }
 
 void PathFinder::roverMoveCallback(const ros::TimerEvent&) {
+    // For now used only for known map traversal.
+
     if(_illegalState) {
         ROS_ERROR("Illegal state in roverMoveCallback");
         return;
@@ -90,6 +94,14 @@ void PathFinder::roverMoveCallback(const ros::TimerEvent&) {
     }
 }
 
+void PathFinder::roverSensorCallback(const autonomy_simulator::RoverMap::ConstPtr& sensorData) {
+    std::vector<int8_t> sensorDataTable(sensorData->data);
+    std::vector<int> updatedIndices = updateMapBasedOnSensorData(_map, sensorDataTable, _roverPoseX,
+        _roverPoseY, _roverPoseR, GRID_SIZE);
+
+    updateGraphFromSensorData(_graph, updatedIndices, _map, GRID_SIZE, GRID_SIZE, _heightDeltaThreshold);
+}
+
 PathFinder::PathFinder():
     _illegalState(false),
     _roverPoseX(0),
@@ -97,8 +109,10 @@ PathFinder::PathFinder():
     _roverPoseR(autonomy_simulator::RoverPose::ORIENTATION_NORTH),
     _goalX(0),
     _goalY(0),
+    _map(std::vector<int8_t>(GRID_SIZE*GRID_SIZE, -1)),
     _graph(Graph(GRID_SIZE*GRID_SIZE)),
     _heightDeltaThreshold(0),
+    _retrieveMapData(_nh.param(std::string("retrieve_map_data"), false)),
     _nh(ros::NodeHandle("path_finder")),
     _roverMovePublisher(_nh.advertise<std_msgs::UInt8>("/rover/move", 1)),
     _roverMovePublisherTimer(_nh.createTimer(
@@ -108,7 +122,9 @@ PathFinder::PathFinder():
         false)),
     _roverPoseSubscriber(_nh.subscribe("/rover/pose", 1, &PathFinder::roverPoseCallback, this)),
     _setGoalSubscriber(_nh.subscribe("/set_goal", 1, &PathFinder::setGoalCallback, this)),
-    _getMapServiceClient(_nh.serviceClient<autonomy_simulator::GetMap>("/get_map")) {
+    _getMapServiceClient(_nh.serviceClient<autonomy_simulator::GetMap>("/get_map")),
+    _roverSensorSubscriber(_nh.subscribe("/rover/sensor", 1, &PathFinder::roverSensorCallback, this)),
+    _roverMapPublisher(_nh.advertise<std_msgs::UInt8>("/rover/map", 1)) {
         
 }
 
@@ -117,28 +133,24 @@ void PathFinder::start() {
     _nh.param(std::string("height_delta_threshold"), temp, 0);
     _heightDeltaThreshold = temp;
 
-    autonomy_simulator::GetMap getMapService;
+    if(_retrieveMapData) {
+        if(!_getMapServiceClient.waitForExistence(ros::Duration(5.0))) {
+            ROS_ERROR("/get_map service unavailable!");
+            _illegalState = true;
+        }
 
-    if(!_getMapServiceClient.waitForExistence(ros::Duration(5.0))) {
-        ROS_ERROR("/get_map service unavailable!");
-        _illegalState = true;
-    }
+        autonomy_simulator::GetMap getMapService;
 
-    if(_getMapServiceClient.call(getMapService)) {
-        ROS_INFO("Map data retrieved.");
+        if(!_illegalState && _getMapServiceClient.call(getMapService)) {
+            ROS_INFO("Map data retrieved.");
 
-        _map = getMapService.response.data;
-        
-        populateGraphBasedOnMap(_graph, _map, _heightDeltaThreshold, GRID_SIZE, GRID_SIZE);
-
-        // We can immediately tell if our rover is just locked to (0,0) from the top and right.
-        ROS_INFO("Immediate neighbours: (1,0) - %d, (0,1) - %d",
-            _map[coordinatesToMapDataIndex(1, 0, GRID_SIZE)],
-            _map[coordinatesToMapDataIndex(0, 1, GRID_SIZE)]
-        );
-    } else {
-        ROS_ERROR("Unable to retrieve map data.");
-        _illegalState = true;
+            _map = getMapService.response.data;
+            
+            populateGraphBasedOnMap(_graph, _map, _heightDeltaThreshold, GRID_SIZE, GRID_SIZE);
+        } else {
+            ROS_ERROR("Unable to retrieve map data.");
+            _illegalState = true;
+        }   
     }
 
     ros::spin();
@@ -147,9 +159,12 @@ void PathFinder::start() {
 int main(int argc, char** argv) {
     ros::init(argc, argv, "path_finder");
 
-    ROS_INFO("Path finder started.");
+    ROS_INFO("Path finder starting");    
 
     PathFinder pathFinder;
     pathFinder.start();
+
+    ROS_INFO("Path finder started.");
+
     return 0;
 }

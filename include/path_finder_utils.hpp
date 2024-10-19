@@ -73,23 +73,25 @@ inline int coordinatesToMapDataIndex(int x, int y, int width) {
     return y * width + x;
 }
 
+inline std::vector<std::pair<uint8_t, uint8_t>> manhattanNeighbours(int8_t x, int8_t y) {
+    return {
+        {x - 1, y},
+        {x + 1, y},
+        {x, y + 1},
+        {x, y - 1}
+    };
+}
+
 inline void populateGraphBasedOnMap(Graph& graph, const std::vector<int8_t>& mapData,
         const int heightDeltaThreshold, const int8_t mapWidth, const int8_t mapHeight) {
 
-    for(int i = 0; i < mapHeight; i++) {
-        for(int j = 0; j < mapWidth; j++) {
-            int currentIndex = coordinatesToMapDataIndex(i, j, mapWidth);
+    for(int y = 0; y < mapHeight; y++) {
+        for(int x = 0; x < mapWidth; x++) {
+            int currentIndex = coordinatesToMapDataIndex(x, y, mapWidth);
 
-            std::vector<std::pair<uint8_t, uint8_t>> potentialNeighbours = {
-                {i - 1, j},
-                {i + 1, j},
-                {i, j + 1},
-                {i, j - 1}
-            };
-
-            for(const auto& [ni, nj] : potentialNeighbours) {
-                if(ni >= 0 && ni < mapHeight && nj >= 0 && nj < mapWidth) {
-                    int neighbourIndex = coordinatesToMapDataIndex(ni, nj, mapWidth);
+            for(const auto& [nx, ny] : manhattanNeighbours(x, y)) {
+                if(nx >= 0 && nx < mapWidth && ny >= 0 && ny < mapHeight) {
+                    int neighbourIndex = coordinatesToMapDataIndex(nx, ny, mapWidth);
                     int heightDelta = std::abs(mapData[currentIndex] - mapData[neighbourIndex]);
 
                     if(heightDelta <= heightDeltaThreshold) {
@@ -129,4 +131,80 @@ inline std::stack<int> createVertexStackFromBFS(const Graph& graph, const Vertex
     }
 
     return route;
+}
+
+// Returns a vector of the updates indices so we don't need to parse unnecessary data to update our graph.
+inline std::vector<int> updateMapBasedOnSensorData(std::vector<int8_t>& map, const std::vector<int8_t>& sensorData,
+        const uint8_t roverPoseX, const uint8_t roverPoseY, const uint8_t roverPoseR, const int mapWidth) {
+
+    int sensorWidth;
+    
+    if(roverPoseR == autonomy_simulator::RoverPose::ORIENTATION_NORTH || roverPoseR == autonomy_simulator::RoverPose::ORIENTATION_SOUTH) {
+        sensorWidth = 3;
+    } else {
+        sensorWidth = 2;
+    }
+
+    int bottomLeftX;
+    int bottomLeftY;
+
+    switch (roverPoseR) {
+        case autonomy_simulator::RoverPose::ORIENTATION_NORTH:
+            bottomLeftX = roverPoseX - 1;
+            bottomLeftY = roverPoseY + 1;
+            break;
+        case autonomy_simulator::RoverPose::ORIENTATION_EAST:
+            bottomLeftX = roverPoseX + 1;
+            bottomLeftY = roverPoseY - 1;
+            break;
+        case autonomy_simulator::RoverPose::ORIENTATION_SOUTH:
+            bottomLeftX = roverPoseX - 1;
+            bottomLeftY = roverPoseY - 2;
+            break;
+        case autonomy_simulator::RoverPose::ORIENTATION_WEST:
+            bottomLeftX = roverPoseX - 2;
+            bottomLeftY = roverPoseY - 1;
+            break;
+        default:
+            bottomLeftX = -1;
+            bottomLeftY = -1;
+            break;
+    }
+
+    std::vector<int> updatedIndices;
+
+    for(int i = 0; i < 5 - sensorWidth; i++) {
+        for(int j = 0; j < sensorWidth; j++) {
+            int mapIndex = coordinatesToMapDataIndex(bottomLeftX + j, bottomLeftY + i, mapWidth);
+            int sensorDataIndex = coordinatesToMapDataIndex(j, i, sensorWidth);
+
+            if(map[mapIndex] == -1) {
+                updatedIndices.push_back(mapIndex);
+            }
+
+            map[mapIndex] = sensorDataIndex;
+        }
+    }
+
+    return updatedIndices;
+}
+
+inline void updateGraphFromSensorData(Graph& graph, const std::vector<int>& updatedIndices,
+        const std::vector<int8_t>& mapData, const int mapWidth, const int mapHeight,
+        const int heightDeltaThreshold) {
+    
+    for(int currentIndex : updatedIndices) {
+        const auto& [x, y] = mapDataIndexToCoordinates(currentIndex, mapWidth);
+        for(const auto& [nx, ny] : manhattanNeighbours(x, y)) {
+            if(nx >= 0 && nx < mapWidth && ny >= 0 && ny < mapHeight) {
+                int neighbourIndex = coordinatesToMapDataIndex(nx, ny, mapWidth);
+
+                int heightDelta = std::abs(mapData[currentIndex] - mapData[neighbourIndex]);
+
+                if(heightDelta <= heightDeltaThreshold) {
+                    add_edge(currentIndex, neighbourIndex, graph);
+                }
+            }
+        }
+    }
 }

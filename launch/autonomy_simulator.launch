@@ -4,5 +4,6 @@
   </node>
   <node name="path_finder" pkg="autonomy_simulator" type="path_finder" output="screen" respawn="true">
     <param name="height_delta_threshold" value="10"/>
+    <param name="retrieve_map_data" value="true"/>
   </node>
 </launch>
