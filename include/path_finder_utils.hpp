@@ -78,7 +78,7 @@ inline void populateGraphBasedOnMap(Graph& graph, const std::vector<int8_t>& map
 
     for(int i = 0; i < mapHeight; i++) {
         for(int j = 0; j < mapWidth; j++) {
-            int currentIndex = coordinatesToMapDataIndex(i, j, mapWidth);
+            int currentIndex = coordinatesToMapDataIndex(j, i, mapWidth);
 
             std::vector<std::pair<uint8_t, uint8_t>> potentialNeighbours = {
                 {i - 1, j},
@@ -89,7 +89,7 @@ inline void populateGraphBasedOnMap(Graph& graph, const std::vector<int8_t>& map
 
             for(const auto& [ni, nj] : potentialNeighbours) {
                 if(ni >= 0 && ni < mapHeight && nj >= 0 && nj < mapWidth) {
-                    int neighbourIndex = coordinatesToMapDataIndex(ni, nj, mapWidth);
+                    int neighbourIndex = coordinatesToMapDataIndex(nj, ni, mapWidth);
                     int heightDelta = std::abs(mapData[currentIndex] - mapData[neighbourIndex]);
 
                     if(heightDelta <= heightDeltaThreshold) {
