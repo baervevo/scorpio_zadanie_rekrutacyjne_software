@@ -3,6 +3,7 @@
 #include <array>
 #include <string>
 #include <stack>
+#include <sstream>
 #include <std_msgs/UInt8.h>
 #include <boost/graph/breadth_first_search.hpp>
 #include <boost/graph/adjacency_list.hpp>
@@ -10,7 +11,7 @@
 #include "autonomy_simulator/RoverPose.h"
 #include "path_finder.hpp"
 
-inline int8_t determineMoveInstruction(int8_t roverPoseX, int8_t roverPoseY, int8_t roverPoseR, int8_t goalX, int8_t goalY) {
+inline int determineMoveInstruction(int8_t roverPoseX, int8_t roverPoseY, int8_t roverPoseR, int8_t goalX, int8_t goalY) {
     // This function assumes that moving forward is desired. If not, we can further reduce the number of rotations by simply going backwards when convenient.
 
     int8_t deltaX = goalX - roverPoseX;
@@ -63,6 +64,21 @@ inline std::string vectorToString(std::vector<T>& vec) {
     ss << "]";
 
     return ss.str();
+}
+
+inline std::string stackToString(std::stack<int> s) {
+    std::ostringstream oss;
+
+    // Transfer elements from stack to string
+    while (!s.empty()) {
+        oss << s.top();
+        s.pop();
+        if (!s.empty()) {
+            oss << " "; // Add space between elements
+        }
+    }
+
+    return oss.str(); // Return the constructed string
 }
 
 inline std::pair<int8_t, int8_t> mapDataIndexToCoordinates(int i, int8_t width) {
@@ -207,4 +223,15 @@ inline void updateGraphFromSensorData(Graph& graph, const std::vector<int>& upda
             }
         }
     }
+}
+
+inline void depthFirstPathFindingRec(Graph& graph, std::vector<bool>& visited, Vertex destination,
+        Vertex current, uint8_t roverPoseR, ros::Publisher roverMovePublisher) {
+}
+
+inline void depthFirstPathFinding(Graph& graph, Vertex destination, Vertex source,
+        uint8_t roverPoseR, ros::Publisher roverMovePublisher) {
+    
+    std::vector<bool> visited(num_vertices(graph), false);
+    depthFirstPathFindingRec(graph, visited, destination, source, roverPoseR, roverMovePublisher);
 }

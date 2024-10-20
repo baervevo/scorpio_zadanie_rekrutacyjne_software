@@ -4,17 +4,12 @@
 #include <std_msgs/UInt8.h>
 #include <vector>
 #include <stack>
-#include <boost/graph/adjacency_list.hpp>
 
 #include "autonomy_simulator/SetGoal.h"
 #include "autonomy_simulator/RoverPose.h"
 #include "autonomy_simulator/GetMap.h"
 #include "autonomy_simulator/RoverMap.h"
-
-using namespace boost;
-
-typedef adjacency_list<vecS, vecS, undirectedS, property<vertex_name_t, int>> Graph;
-typedef graph_traits<Graph>::vertex_descriptor Vertex;
+#include "path_finder_manager.hpp"
 
 class PathFinder {
     bool _illegalState;
@@ -22,18 +17,7 @@ class PathFinder {
 
     // PathFinder information
 
-    uint8_t _roverPoseX;
-    uint8_t _roverPoseY;
-    autonomy_simulator::RoverPose::_orientation_type _roverPoseR;
-
-    uint8_t _goalX;
-    uint8_t _goalY;
-
-    std::vector<int8_t> _map;
-    Graph _graph;
-    std::stack<int> _activeRoute;
-    int _heightDeltaThreshold;
-
+    PathFinderManager* _pathFinderManager;
     bool _retrieveMapData;
 
     // SetGoal Subscriber

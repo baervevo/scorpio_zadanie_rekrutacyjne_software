@@ -47,6 +47,9 @@ add_executable(autonomy_simulator
 )
 
 add_executable(path_finder
+  src/path_finder_manager.cpp
+  src/known_map_path_finder.cpp
+  src/unknown_map_path_finder.cpp
   src/path_finder.cpp
 )
 
