@@ -127,7 +127,5 @@ int main(int argc, char** argv) {
     PathFinder pathFinder;
     pathFinder.start();
 
-    ROS_INFO("Path finder started.");
-
     return 0;
 }

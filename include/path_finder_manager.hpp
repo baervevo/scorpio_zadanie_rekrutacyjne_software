@@ -10,9 +10,6 @@
 
 using namespace boost;
 
-typedef adjacency_list<vecS, vecS, undirectedS, property<vertex_name_t, int>> Graph;
-typedef graph_traits<Graph>::vertex_descriptor Vertex;
-
 class PathFinderManager {
   public:
     PathFinderManager(uint8_t heightDeltaThreshold);
@@ -39,6 +36,4 @@ class PathFinderManager {
 
     uint8_t _heightDeltaThreshold;
     std::vector<int8_t> _map;
-    Graph _graph;
-    std::stack<int> _activeRoute;
 };

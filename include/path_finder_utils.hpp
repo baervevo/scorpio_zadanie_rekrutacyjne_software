@@ -5,8 +5,6 @@
 #include <stack>
 #include <sstream>
 #include <std_msgs/UInt8.h>
-#include <boost/graph/breadth_first_search.hpp>
-#include <boost/graph/adjacency_list.hpp>
 
 #include "autonomy_simulator/RoverPose.h"
 #include "path_finder.hpp"
@@ -98,57 +96,6 @@ inline std::vector<std::pair<uint8_t, uint8_t>> manhattanNeighbours(int8_t x, in
     };
 }
 
-inline void populateGraphBasedOnMap(Graph& graph, const std::vector<int8_t>& mapData,
-        const int heightDeltaThreshold, const int8_t mapWidth, const int8_t mapHeight) {
-
-    for(int y = 0; y < mapHeight; y++) {
-        for(int x = 0; x < mapWidth; x++) {
-            int currentIndex = coordinatesToMapDataIndex(x, y, mapWidth);
-
-            for(const auto& [nx, ny] : manhattanNeighbours(x, y)) {
-                if(nx >= 0 && nx < mapWidth && ny >= 0 && ny < mapHeight) {
-                    int neighbourIndex = coordinatesToMapDataIndex(nx, ny, mapWidth);
-                    int heightDelta = std::abs(mapData[currentIndex] - mapData[neighbourIndex]);
-
-                    if(heightDelta <= heightDeltaThreshold) {
-                        boost::add_edge(currentIndex, neighbourIndex, graph);
-                    }
-                }
-            }
-        }
-    }
-}
-
-template <typename Graph, typename Vertex>
-inline std::stack<int> createVertexStackFromBFS(const Graph& graph, const Vertex source, const Vertex destination) {
-    std::stack<Vertex> route;
-    std::vector<Vertex> predecessors(num_vertices(graph), -1);
-    // To improve the "generality" of this function we would need to find a better value than -1
-    // to initialize the predecessor vector to, we get away with this here because our graph vertex descriptor
-    // is int, anything that doesn't have a cast to int will cause errors.
-
-    breadth_first_search(graph, vertex(source, graph),
-        visitor(
-            make_bfs_visitor(
-                record_predecessors(
-                    &predecessors[0],
-                    on_tree_edge()
-                )
-            )
-        )
-    );
-
-    if(predecessors[destination] == -1) {
-        return std::stack<int>(); // Empty stack means no valid path was found or the source is the same as the destination.
-    }
-
-    for(int vertex = destination; vertex != -1; vertex = predecessors[vertex]){
-        route.push(vertex);
-    }
-
-    return route;
-}
-
 // Returns a vector of the updates indices so we don't need to parse unnecessary data to update our graph.
 inline std::vector<int> updateMapBasedOnSensorData(std::vector<int8_t>& map, const std::vector<int8_t>& sensorData,
         const uint8_t roverPoseX, const uint8_t roverPoseY, const uint8_t roverPoseR, const int mapWidth) {
@@ -203,35 +150,4 @@ inline std::vector<int> updateMapBasedOnSensorData(std::vector<int8_t>& map, con
     }
 
     return updatedIndices;
-}
-
-inline void updateGraphFromSensorData(Graph& graph, const std::vector<int>& updatedIndices,
-        const std::vector<int8_t>& mapData, const int mapWidth, const int mapHeight,
-        const int heightDeltaThreshold) {
-    
-    for(int currentIndex : updatedIndices) {
-        const auto& [x, y] = mapDataIndexToCoordinates(currentIndex, mapWidth);
-        for(const auto& [nx, ny] : manhattanNeighbours(x, y)) {
-            if(nx >= 0 && nx < mapWidth && ny >= 0 && ny < mapHeight) {
-                int neighbourIndex = coordinatesToMapDataIndex(nx, ny, mapWidth);
-
-                int heightDelta = std::abs(mapData[currentIndex] - mapData[neighbourIndex]);
-
-                if(heightDelta <= heightDeltaThreshold) {
-                    add_edge(currentIndex, neighbourIndex, graph);
-                }
-            }
-        }
-    }
-}
-
-inline void depthFirstPathFindingRec(Graph& graph, std::vector<bool>& visited, Vertex destination,
-        Vertex current, uint8_t roverPoseR, ros::Publisher roverMovePublisher) {
-}
-
-inline void depthFirstPathFinding(Graph& graph, Vertex destination, Vertex source,
-        uint8_t roverPoseR, ros::Publisher roverMovePublisher) {
-    
-    std::vector<bool> visited(num_vertices(graph), false);
-    depthFirstPathFindingRec(graph, visited, destination, source, roverPoseR, roverMovePublisher);
 }

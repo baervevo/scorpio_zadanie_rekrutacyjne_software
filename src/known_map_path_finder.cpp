@@ -1,9 +1,62 @@
 #include "known_map_path_finder.hpp"
 #include "path_finder_utils.hpp"
 #include "autonomy_simulator.hpp"
+#include "boost/graph/breadth_first_search.hpp"
+
+void populateGraphBasedOnMap(Graph& graph, const std::vector<int8_t>& mapData,
+        const int heightDeltaThreshold, const int8_t mapWidth, const int8_t mapHeight) {
+
+    for(int y = 0; y < mapHeight; y++) {
+        for(int x = 0; x < mapWidth; x++) {
+            int currentIndex = coordinatesToMapDataIndex(x, y, mapWidth);
+
+            for(const auto& [nx, ny] : manhattanNeighbours(x, y)) {
+                if(nx >= 0 && nx < mapWidth && ny >= 0 && ny < mapHeight) {
+                    int neighbourIndex = coordinatesToMapDataIndex(nx, ny, mapWidth);
+                    int heightDelta = std::abs(mapData[currentIndex] - mapData[neighbourIndex]);
+
+                    if(heightDelta <= heightDeltaThreshold) {
+                        boost::add_edge(currentIndex, neighbourIndex, graph);
+                    }
+                }
+            }
+        }
+    }
+}
+
+template <typename Graph, typename Vertex>
+std::stack<int> createVertexStackFromBFS(const Graph& graph, const Vertex source, const Vertex destination) {
+    std::stack<Vertex> route;
+    std::vector<Vertex> predecessors(num_vertices(graph), -1);
+    // To improve the "generality" of this function we would need to find a better value than -1
+    // to initialize the predecessor vector to, we get away with this here because our graph vertex descriptor
+    // is int, anything that doesn't have a cast to int will cause errors.
+
+    breadth_first_search(graph, vertex(source, graph),
+        visitor(
+            make_bfs_visitor(
+                record_predecessors(
+                    &predecessors[0],
+                    on_tree_edge()
+                )
+            )
+        )
+    );
+
+    if(predecessors[destination] == -1) {
+        return std::stack<int>(); // Empty stack means no valid path was found or the source is the same as the destination.
+    }
+
+    for(int vertex = destination; vertex != -1; vertex = predecessors[vertex]){
+        route.push(vertex);
+    }
+
+    return route;
+}
 
 KnownMapPathFinder::KnownMapPathFinder(uint8_t heightDeltaThreshold, std::vector<int8_t>& mapData):
-    PathFinderManager(heightDeltaThreshold) {
+    PathFinderManager(heightDeltaThreshold),
+    _graph(Graph(GRID_SIZE*GRID_SIZE)) {
 
     _map = mapData;
     populateGraphBasedOnMap(_graph, _map, _heightDeltaThreshold, GRID_SIZE, GRID_SIZE);

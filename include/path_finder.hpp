@@ -46,4 +46,8 @@ class PathFinder {
  public:
     PathFinder();
     void start();
+
+    ~PathFinder() {
+        delete _pathFinderManager;
+    }
 };

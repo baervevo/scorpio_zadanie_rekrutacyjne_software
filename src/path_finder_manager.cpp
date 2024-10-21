@@ -9,7 +9,6 @@ PathFinderManager::PathFinderManager(uint8_t heightDeltaThreshold):
     _goalX(0),
     _goalY(0),
     _map(std::vector<int8_t>(GRID_SIZE*GRID_SIZE, -1)),
-    _graph(Graph(GRID_SIZE*GRID_SIZE)),
     _heightDeltaThreshold(heightDeltaThreshold) {
 }
 
