@@ -5,9 +5,10 @@
 #include <stack>
 #include <sstream>
 #include <std_msgs/UInt8.h>
+#include <iomanip>
+#include <fstream>
 
 #include "autonomy_simulator/RoverPose.h"
-#include "path_finder.hpp"
 
 inline int determineMoveInstruction(int8_t roverPoseX, int8_t roverPoseY, int8_t roverPoseR, int8_t goalX, int8_t goalY) {
     // This function assumes that moving forward is desired. If not, we can further reduce the number of rotations by simply going backwards when convenient.
@@ -60,6 +61,32 @@ inline std::string vectorToString(std::vector<T>& vec) {
         ss << vec[i];
     }
     ss << "]";
+
+    return ss.str();
+}
+
+inline void printStringToFile(const std::string& filename, const std::string& content) {
+    std::ofstream file(filename);
+    if (file.is_open()) {
+        file << content;
+        file.close();
+        std::cout << "Content written to " << filename << std::endl;
+    } else {
+        std::cerr << "Unable to open file: " << filename << std::endl;
+    }
+}
+
+
+inline std::string printMap(std::vector<int8_t> mapData, int8_t mapWidth) {
+    std::stringstream ss;
+
+    for(int i = 0; i < mapData.size(); i++) {
+        if(i % mapWidth == 0) {
+            ss << "\n";
+        }
+
+        ss << std::setw(3) << static_cast<int>(mapData[i]);
+    }
 
     return ss.str();
 }

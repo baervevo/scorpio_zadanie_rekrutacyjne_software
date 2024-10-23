@@ -25,7 +25,7 @@ void PathFinder::setGoalCallback(const autonomy_simulator::SetGoal::ConstPtr& go
     uint8_t goalX = goal->x;
     uint8_t goalY = goal->y;
 
-    ROS_INFO("New goal set: (%d,%d)", goalX, goalY);
+    ROS_INFO("Setting new goal: (%d,%d)", goalX, goalY);
 
     std::pair<uint8_t, uint8_t> goalData = {
         goalX, goalY
@@ -109,7 +109,11 @@ void PathFinder::start() {
 
         if(!_illegalState && _getMapServiceClient.call(getMapService)) {
             ROS_INFO("Map data retrieved.");
-            _pathFinderManager = new KnownMapPathFinder(heightDeltaThreshold, getMapService.response.data);
+
+            std::vector<int8_t> mapData = getMapService.response.data;
+            _pathFinderManager = new KnownMapPathFinder(heightDeltaThreshold, GRID_SIZE, GRID_SIZE, mapData);
+
+            //ROS_INFO("Neighbouring square heights: %d, %d", mapData[1], mapData[50]);
         } else {
             ROS_ERROR("Unable to retrieve map data.");
             _illegalState = true;

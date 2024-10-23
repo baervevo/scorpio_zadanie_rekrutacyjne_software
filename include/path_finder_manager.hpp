@@ -2,6 +2,8 @@
 
 #include <array>
 #include <stack>
+#include <ros/ros.h>
+#include "path_finder_utils.hpp"
 #include <boost/graph/adjacency_list.hpp>
 #include "autonomy_simulator/SetGoal.h"
 #include "autonomy_simulator/RoverPose.h"
@@ -12,14 +14,25 @@ using namespace boost;
 
 class PathFinderManager {
   public:
-    PathFinderManager(uint8_t heightDeltaThreshold);
+    PathFinderManager(uint8_t heightDeltaThreshold, uint8_t gridWidth, uint8_t gridHeight);
     void setActivePose(std::array<int8_t, 3>&);
     
     virtual bool setGoal(std::pair<uint8_t, uint8_t>& goalData) {
-      _goalX = goalData.first;
-      _goalY = goalData.second;
+        int8_t goalX = goalData.first;
+        int8_t goalY = goalData.second;
 
-      return true;
+        if(goalX < 0 || goalX >= _gridWidth || goalY < 0 || goalY >= _gridHeight) {
+			ROS_ERROR("Coordinates don't belong to map.");
+            return false;
+        }
+
+        _goalX = goalX;
+        _goalY = goalY;
+
+		//ROS_INFO("TARGET HEIGHT: %d", _map[coordinatesToMapDataIndex(_goalX, _goalY, _gridWidth)]);
+		//printStringToFile("/home/mariuszr/Desktop/map.txt", printMap(_map, _gridWidth));
+
+        return true;
     };
 
     virtual void updateMapData(const autonomy_simulator::RoverMap::ConstPtr&) = 0;
@@ -36,4 +49,7 @@ class PathFinderManager {
 
     uint8_t _heightDeltaThreshold;
     std::vector<int8_t> _map;
+
+	uint8_t _gridWidth;
+	uint8_t _gridHeight;
 };
