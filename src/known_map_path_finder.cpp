@@ -37,7 +37,7 @@ int KnownMapPathFinder::getNextMove() {
         ROS_INFO("Reached goal!");
         return -1;
     }
-
+        
     if(!_activeRoute.empty()) {
         // Not entirely elegant but stack top access is O(1) and I can't think of an implementation
         // that forgoes the if statement without implementing a different way of dealing with rotation

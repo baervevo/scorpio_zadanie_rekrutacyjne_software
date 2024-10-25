@@ -219,3 +219,10 @@ inline std::vector<int> updateMapBasedOnSensorData(std::vector<int8_t>& map, con
 
     return updatedIndices;
 }
+
+inline float euclideanDistance(int source, int destination, int8_t mapWidth) {
+    const auto& [x1, y1] = mapDataIndexToCoordinates(source, mapWidth);
+    const auto& [x2, y2] = mapDataIndexToCoordinates(destination, mapWidth);
+
+    return std::sqrt(std::pow(x2 - x1, 2) + std::pow(y2 - y1, 2));
+}

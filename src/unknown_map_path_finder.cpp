@@ -2,6 +2,7 @@
 #include "path_finder_utils.hpp"
 #include "autonomy_simulator.hpp"
 #include "known_map_path_finder.hpp"
+#include <limits>
 
 UnknownMapPathFinder::UnknownMapPathFinder(uint8_t heightDeltaThreshold, uint8_t gridWidth, uint8_t gridHeight):
     PathFinderManager(heightDeltaThreshold, gridWidth, gridHeight),
@@ -24,17 +25,29 @@ int UnknownMapPathFinder::getNextMove() {
     int goalIndex = coordinatesToMapDataIndex(_goalX, _goalY, _gridWidth);
     int roverIndex = coordinatesToMapDataIndex(_roverPoseX, _roverPoseY, _gridWidth);
 
+    
     if(_map[goalIndex] != -1 && _activeRoute->empty()) {
+        if(_map[goalIndex] == std::int8_t(100)) {
+            ROS_ERROR("Goal unreachable!");
+            return -1;
+        }
+
         *_activeRoute = KnownMapPathFinder::createVertexStackFromBFS(
             _graph,
             roverIndex,
             goalIndex
         );
 
-        ROS_INFO("Found direct path!");
+        _nextVertex = -1;
+
+        if(!_activeRoute->empty()) {
+            ROS_INFO("Found direct path!");
+        }
     }
 
     if(!_activeRoute->empty()) {
+        // We reuse the stack top as the destination until we reach it, only then do we pop it.
+
         _nextVertex = _activeRoute->top();
 
         if(_nextVertex == roverIndex) {
@@ -42,9 +55,9 @@ int UnknownMapPathFinder::getNextMove() {
             _nextVertex = _activeRoute->top();
         }
     } else {
-        // If not we depth-first-search until we do.
+        // If there was no direct path found then we DFS.
 
-        if(_nextVertex == roverIndex) {
+        if(_nextVertex == roverIndex || _nextVertex == -1) {
             _nextVertex = DFS();
         }
     }
@@ -61,7 +74,7 @@ int UnknownMapPathFinder::getNextMove() {
 bool UnknownMapPathFinder::setGoal(std::pair<uint8_t, uint8_t>& goalData) {
     PathFinderManager::setGoal(goalData);       
     
-    _nextVertex = 0;
+    _nextVertex = -1;
     _visited = new std::vector<bool>(num_vertices(_graph), false);
     _dfsStack = new std::stack<Vertex>();
     _activeRoute = new std::stack<int>();
@@ -77,24 +90,34 @@ Vertex UnknownMapPathFinder::DFS() {
     _visited->at(currentIndex) = true;
     std::pair<AdjacencyIterator, AdjacencyIterator> neighbours = adjacent_vertices(currentIndex, _graph);
 
+    float minDist = std::numeric_limits<float>::max();
+    int goalIndex = coordinatesToMapDataIndex(_goalX, _goalY, _gridWidth);
+    Vertex nextVertex = -1;
+
     for(AdjacencyIterator adIt = neighbours.first; adIt != neighbours.second; ++adIt) {
         Vertex neighbour = *adIt;
 
-        if(!_visited->at(neighbour)) {
-            _dfsStack->push(neighbour);
+        if(!_visited->at(neighbour)) { // Greedy approach but is effective because graph is dense. DFS guarantees we explore every possible path.
+            float dist = euclideanDistance(neighbour, goalIndex, _gridWidth);
 
-            return neighbour;
+            if(dist <= minDist) {
+                minDist = dist;
+                nextVertex = neighbour;
+            }
         }
     }
 
-    if(_dfsStack->empty()) {
+    if(nextVertex != -1) {
+        _dfsStack->push(nextVertex);
+        return nextVertex;
+    } else if(_dfsStack->empty()) {
         return -1;
+    } else {
+        _dfsStack->pop();
+        Vertex ret = _dfsStack->top();
+
+        return ret;
     }
-
-    _dfsStack->pop();
-    Vertex ret = _dfsStack->top();
-
-    return ret;
 }
 
 void UnknownMapPathFinder::updateMapData(const autonomy_simulator::RoverMap::ConstPtr& sensorData) {
