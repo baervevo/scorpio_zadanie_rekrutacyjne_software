@@ -17,13 +17,13 @@ class KnownMapPathFinder : public PathFinderManager {
     void updateMapData(const autonomy_simulator::RoverMap::ConstPtr&) override {
       // do nothing.
     };
+
+    template <typename Graph, typename Vertex>
+    static std::stack<Vertex> createVertexStackFromBFS(const Graph& graph, const Vertex source, const Vertex destination);
   private:
     std::stack<int> _activeRoute;
     Graph _graph;
 
     static void populateGraphBasedOnMap(Graph& graph, const std::vector<int8_t>& mapData,
             const int heightDeltaThreshold, const int8_t mapWidth, const int8_t mapHeight);
-
-    template <typename Graph, typename Vertex>
-    static std::stack<int> createVertexStackFromBFS(const Graph& graph, const Vertex source, const Vertex destination);
 };

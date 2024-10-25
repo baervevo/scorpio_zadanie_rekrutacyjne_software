@@ -70,7 +70,6 @@ inline void printStringToFile(const std::string& filename, const std::string& co
     if (file.is_open()) {
         file << content;
         file.close();
-        std::cout << "Content written to " << filename << std::endl;
     } else {
         std::cerr << "Unable to open file: " << filename << std::endl;
     }
@@ -123,9 +122,29 @@ inline std::vector<std::pair<uint8_t, uint8_t>> manhattanNeighbours(int8_t x, in
     };
 }
 
+inline void transposeMatrix(std::vector<std::vector<int>>& matrix) {
+    // Get the number of rows and columns
+    int rows = matrix.size();
+    int cols = matrix[0].size();
+
+    // Create a new matrix for the transposed result
+    std::vector<std::vector<int>> transposedMatrix(cols, std::vector<int>(rows));
+
+    // Transpose the original matrix
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            transposedMatrix[j][i] = matrix[i][j];
+        }
+    }
+
+    std::reverse(transposedMatrix.begin(), transposedMatrix.end());
+    
+    matrix = transposedMatrix;
+}
+
 // Returns a vector of the updates indices so we don't need to parse unnecessary data to update our graph.
 inline std::vector<int> updateMapBasedOnSensorData(std::vector<int8_t>& map, const std::vector<int8_t>& sensorData,
-        const uint8_t roverPoseX, const uint8_t roverPoseY, const uint8_t roverPoseR, const int mapWidth) {
+        const uint8_t roverPoseX, const uint8_t roverPoseY, const uint8_t roverPoseR, const int mapWidth, const int mapHeight) {
 
     int sensorWidth;
     
@@ -137,42 +156,64 @@ inline std::vector<int> updateMapBasedOnSensorData(std::vector<int8_t>& map, con
 
     int bottomLeftX;
     int bottomLeftY;
+    int rotations;
+
+    std::vector<std::vector<int>> indexMatrix = {
+        {0, 1, 2},
+        {3, 4, 5},
+    };
 
     switch (roverPoseR) {
         case autonomy_simulator::RoverPose::ORIENTATION_NORTH:
+            rotations = 0;
             bottomLeftX = roverPoseX - 1;
             bottomLeftY = roverPoseY + 1;
             break;
         case autonomy_simulator::RoverPose::ORIENTATION_EAST:
+            rotations = 1;
             bottomLeftX = roverPoseX + 1;
             bottomLeftY = roverPoseY - 1;
             break;
         case autonomy_simulator::RoverPose::ORIENTATION_SOUTH:
+            rotations = 2;
             bottomLeftX = roverPoseX - 1;
             bottomLeftY = roverPoseY - 2;
             break;
         case autonomy_simulator::RoverPose::ORIENTATION_WEST:
+            rotations = 3;
             bottomLeftX = roverPoseX - 2;
             bottomLeftY = roverPoseY - 1;
             break;
         default:
+            rotations = -1;
             bottomLeftX = -1;
             bottomLeftY = -1;
             break;
     }
 
+    for(int i = 0; i < rotations; i++) {
+        transposeMatrix(indexMatrix);
+    }
+
     std::vector<int> updatedIndices;
 
     for(int i = 0; i < 5 - sensorWidth; i++) {
-        for(int j = 0; j < sensorWidth; j++) {
-            int mapIndex = coordinatesToMapDataIndex(bottomLeftX + j, bottomLeftY + i, mapWidth);
-            int sensorDataIndex = coordinatesToMapDataIndex(j, i, sensorWidth);
+        for(int j = 0; j < sensorWidth; j++) {  
+            int x = bottomLeftX + j;
+            int y = bottomLeftY + i;
 
-            if(map[mapIndex] == -1) {
-                updatedIndices.push_back(mapIndex);
+            if(x >= 0 && x < mapWidth && y >= 0 && y < mapHeight) {
+                int mapIndex = coordinatesToMapDataIndex(x, y, mapWidth);  
+
+                if(map[mapIndex] == -1) {
+                    updatedIndices.push_back(mapIndex);
+
+                    int currentPosInd = coordinatesToMapDataIndex(roverPoseX, roverPoseY, mapWidth);
+                    int sensorInd = indexMatrix[i][j];
+
+                    map[mapIndex] = map[currentPosInd] + sensorData[sensorInd];
+                }
             }
-
-            map[mapIndex] = sensorDataIndex;
         }
     }
 

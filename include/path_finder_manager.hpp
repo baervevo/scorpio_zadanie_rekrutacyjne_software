@@ -30,7 +30,6 @@ class PathFinderManager {
         _goalY = goalY;
 
 		//ROS_INFO("TARGET HEIGHT: %d", _map[coordinatesToMapDataIndex(_goalX, _goalY, _gridWidth)]);
-		//printStringToFile("/home/mariuszr/Desktop/map.txt", printMap(_map, _gridWidth));
 
         return true;
     };

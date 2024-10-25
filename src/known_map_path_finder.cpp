@@ -83,7 +83,7 @@ void KnownMapPathFinder::populateGraphBasedOnMap(Graph& graph, const std::vector
 }
 
 template <typename Graph, typename Vertex>
-std::stack<int> KnownMapPathFinder::createVertexStackFromBFS(const Graph& graph, const Vertex source, const Vertex destination) {
+std::stack<Vertex> KnownMapPathFinder::createVertexStackFromBFS(const Graph& graph, const Vertex source, const Vertex destination) {
     std::stack<Vertex> route;
     std::vector<Vertex> predecessors(num_vertices(graph), -1);
     // To improve the "generality" of this function we would need to find a better value than -1

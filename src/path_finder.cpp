@@ -13,6 +13,7 @@
 #include "autonomy_simulator/RoverPose.h"
 #include "autonomy_simulator/GetMap.h"
 #include "known_map_path_finder.hpp"
+#include "unknown_map_path_finder.hpp"
 
 using namespace boost;
 
@@ -47,6 +48,10 @@ void PathFinder::roverPoseCallback(const autonomy_simulator::RoverPose::ConstPtr
         pose->y,
         pose->orientation
     };
+
+    if(poseData[0] == -1) {
+        _roverMovePublisherTimer.stop();
+    }
 
     _pathFinderManager->setActivePose(poseData);
 }
@@ -118,6 +123,8 @@ void PathFinder::start() {
             ROS_ERROR("Unable to retrieve map data.");
             _illegalState = true;
         }   
+    } else {
+        _pathFinderManager = new UnknownMapPathFinder(heightDeltaThreshold, GRID_SIZE, GRID_SIZE);
     }
 
     ros::spin();
