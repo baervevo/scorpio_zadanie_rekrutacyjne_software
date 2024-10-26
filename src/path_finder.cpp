@@ -68,6 +68,10 @@ void PathFinder::roverMoveCallback(const ros::TimerEvent&) {
 
     if(instruction != -1) {
         _roverMovePublisher.publish(msg);
+
+        autonomy_simulator::RoverMap mapMsg;
+        mapMsg.data = _pathFinderManager->getMapData();
+        _roverMapPublisher.publish(mapMsg);
     } else {
         _roverMovePublisherTimer.stop();
     }
@@ -96,7 +100,7 @@ PathFinder::PathFinder():
     _setGoalSubscriber(_nh.subscribe("/set_goal", 1, &PathFinder::setGoalCallback, this)),
     _getMapServiceClient(_nh.serviceClient<autonomy_simulator::GetMap>("/get_map")),
     _roverSensorSubscriber(_nh.subscribe("/rover/sensor", 1, &PathFinder::roverSensorCallback, this)),
-    _roverMapPublisher(_nh.advertise<std_msgs::UInt8>("/rover/map", 1)) {
+    _roverMapPublisher(_nh.advertise<autonomy_simulator::RoverMap>("/rover/map", 1)) {
         
 }
 

@@ -16,6 +16,10 @@ class PathFinderManager {
   public:
     PathFinderManager(uint8_t heightDeltaThreshold, uint8_t gridWidth, uint8_t gridHeight);
     void setActivePose(std::array<int8_t, 3>&);
+
+	std::vector<int8_t>& getMapData() {
+		return _map;
+	};
     
     virtual bool setGoal(std::pair<uint8_t, uint8_t>& goalData) {
         int8_t goalX = goalData.first;
@@ -33,7 +37,7 @@ class PathFinderManager {
 
         return true;
     };
-
+    
     virtual void updateMapData(const autonomy_simulator::RoverMap::ConstPtr&) = 0;
     virtual int getNextMove() = 0;
     virtual ~PathFinderManager() = default;
